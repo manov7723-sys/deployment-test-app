@@ -2,10 +2,13 @@
 # --- Build stage: install ALL deps (build tools live in devDependencies) ---
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
-RUN npx prisma generate
+# Prisma: generate the client before build (added by DeepAgent auto-heal).
+RUN if [ -f prisma/schema.prisma ] || [ -f schema.prisma ]; then \
+      npx --yes prisma generate; \
+    fi
 RUN npm run build
 
 # --- Runtime: unprivileged nginx (already non-root uid 101, listens on 8080) ---
