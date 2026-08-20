@@ -2,9 +2,8 @@
 # --- Build stage: install ALL deps (build tools live in devDependencies) ---
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY ./ ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-COPY . .
 RUN npm run build
 
 # --- Runtime: unprivileged nginx (already non-root uid 101, listens on 8080) ---
