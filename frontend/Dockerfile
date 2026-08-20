@@ -2,9 +2,10 @@
 # --- Build stage: install ALL deps (build tools live in devDependencies) ---
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY frontend/package*.json ./
+COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
+RUN npx prisma generate
 RUN npm run build
 
 # --- Runtime: unprivileged nginx (already non-root uid 101, listens on 8080) ---
