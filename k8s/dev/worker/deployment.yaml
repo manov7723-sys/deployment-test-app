@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-test-app-worker
+  namespace: storefront-dev-2
+  labels:
+    app.kubernetes.io/name: deployment-test-app-worker
+    app.kubernetes.io/managed-by: deepagent
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: deployment-test-app-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: deployment-test-app-worker
+        app.kubernetes.io/managed-by: deepagent
+    spec:
+      containers:
+        - name: deployment-test-app-worker
+          image: 400200465532.dkr.ecr.us-east-1.amazonaws.com/deployment-test-app-worker:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - secretRef:
+                name: app-db
+                optional: true
+            - secretRef:
+                name: app-env
+                optional: true
+            - secretRef:
+                name: app-env-worker
+                optional: true
+          env:
+            - name: RESULT_URL
+              value: http://result.storefront-dev-2.svc.cluster.local
+            - name: VOTE_URL
+              value: http://vote.storefront-dev-2.svc.cluster.local

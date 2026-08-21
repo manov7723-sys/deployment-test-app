@@ -33,14 +33,14 @@ jobs:
       - name: Configure cluster access (keyless)
         run: aws eks update-kubeconfig --name "new-help-tes-2-dev" --region us-east-1
 
-      - name: Ensure namespace storefront-dev is Active (auto-heal if stuck Terminating)
+      - name: Ensure namespace storefront-dev-2 is Active (auto-heal if stuck Terminating)
         # Three-stage self-heal — see cicd-pipeline.ts for the full rationale.
         # Stage 1: wait 60s for natural termination.
         # Stage 2: force-clear finalizers on Services + PVCs, wait 30s.
         # Stage 3: nuke the namespace's own finalizer via /finalize subresource.
         run: |
           set -eu
-          NS="storefront-dev"
+          NS="storefront-dev-2"
           ns_phase() { kubectl get namespace "$NS" -o jsonpath='{.status.phase}' 2>/dev/null || echo ""; }
           for i in $(seq 1 30); do
             p=$(ns_phase)
@@ -92,18 +92,18 @@ jobs:
         # repos whose manifests are still split across multiple files.
         run: |
           if [ -f "k8s/dev/result/manifest.yaml" ]; then
-            kubectl apply -n storefront-dev -f "k8s/dev/result/manifest.yaml"
+            kubectl apply -n storefront-dev-2 -f "k8s/dev/result/manifest.yaml"
           else
-            kubectl apply -n storefront-dev -f "k8s/dev/result/"
+            kubectl apply -n storefront-dev-2 -f "k8s/dev/result/"
           fi
 
       - name: Restart result rollout (image tag "latest" — force pods onto the new build)
         id: restart_result
-        run: kubectl rollout restart deployment/deployment-test-app-result -n storefront-dev
+        run: kubectl rollout restart deployment/deployment-test-app-result -n storefront-dev-2
 
       - name: Wait for result rollout
         id: wait_result
-        run: kubectl rollout status deployment/deployment-test-app-result -n storefront-dev --timeout=180s
+        run: kubectl rollout status deployment/deployment-test-app-result -n storefront-dev-2 --timeout=180s
 
       - name: Rollback result on failed rollout
         # Scoped to THIS service's own step outcomes (see sequentialDeploySteps
@@ -113,8 +113,8 @@ jobs:
         if: ${{ always() && (steps.apply_result.outcome == 'failure' || steps.restart_result.outcome == 'failure' || steps.wait_result.outcome == 'failure') }}
         run: |
           echo "::warning::Rollout of deployment-test-app-result failed its health check — rolling back to the previous revision."
-          kubectl rollout undo deployment/deployment-test-app-result -n storefront-dev
-          kubectl rollout status deployment/deployment-test-app-result -n storefront-dev --timeout=120s
+          kubectl rollout undo deployment/deployment-test-app-result -n storefront-dev-2
+          kubectl rollout status deployment/deployment-test-app-result -n storefront-dev-2 --timeout=120s
 
       - name: Apply vote manifests
         id: apply_vote
@@ -126,18 +126,18 @@ jobs:
         # repos whose manifests are still split across multiple files.
         run: |
           if [ -f "k8s/dev/vote/manifest.yaml" ]; then
-            kubectl apply -n storefront-dev -f "k8s/dev/vote/manifest.yaml"
+            kubectl apply -n storefront-dev-2 -f "k8s/dev/vote/manifest.yaml"
           else
-            kubectl apply -n storefront-dev -f "k8s/dev/vote/"
+            kubectl apply -n storefront-dev-2 -f "k8s/dev/vote/"
           fi
 
       - name: Restart vote rollout (image tag "latest" — force pods onto the new build)
         id: restart_vote
-        run: kubectl rollout restart deployment/deployment-test-app-vote -n storefront-dev
+        run: kubectl rollout restart deployment/deployment-test-app-vote -n storefront-dev-2
 
       - name: Wait for vote rollout
         id: wait_vote
-        run: kubectl rollout status deployment/deployment-test-app-vote -n storefront-dev --timeout=180s
+        run: kubectl rollout status deployment/deployment-test-app-vote -n storefront-dev-2 --timeout=180s
 
       - name: Rollback vote on failed rollout
         # Scoped to THIS service's own step outcomes (see sequentialDeploySteps
@@ -147,8 +147,8 @@ jobs:
         if: ${{ always() && (steps.apply_vote.outcome == 'failure' || steps.restart_vote.outcome == 'failure' || steps.wait_vote.outcome == 'failure') }}
         run: |
           echo "::warning::Rollout of deployment-test-app-vote failed its health check — rolling back to the previous revision."
-          kubectl rollout undo deployment/deployment-test-app-vote -n storefront-dev
-          kubectl rollout status deployment/deployment-test-app-vote -n storefront-dev --timeout=120s
+          kubectl rollout undo deployment/deployment-test-app-vote -n storefront-dev-2
+          kubectl rollout status deployment/deployment-test-app-vote -n storefront-dev-2 --timeout=120s
 
       - name: Apply worker manifests
         id: apply_worker
@@ -160,18 +160,18 @@ jobs:
         # repos whose manifests are still split across multiple files.
         run: |
           if [ -f "k8s/dev/worker/manifest.yaml" ]; then
-            kubectl apply -n storefront-dev -f "k8s/dev/worker/manifest.yaml"
+            kubectl apply -n storefront-dev-2 -f "k8s/dev/worker/manifest.yaml"
           else
-            kubectl apply -n storefront-dev -f "k8s/dev/worker/"
+            kubectl apply -n storefront-dev-2 -f "k8s/dev/worker/"
           fi
 
       - name: Restart worker rollout (image tag "latest" — force pods onto the new build)
         id: restart_worker
-        run: kubectl rollout restart deployment/deployment-test-app-worker -n storefront-dev
+        run: kubectl rollout restart deployment/deployment-test-app-worker -n storefront-dev-2
 
       - name: Wait for worker rollout
         id: wait_worker
-        run: kubectl rollout status deployment/deployment-test-app-worker -n storefront-dev --timeout=180s
+        run: kubectl rollout status deployment/deployment-test-app-worker -n storefront-dev-2 --timeout=180s
 
       - name: Rollback worker on failed rollout
         # Scoped to THIS service's own step outcomes (see sequentialDeploySteps
@@ -181,5 +181,5 @@ jobs:
         if: ${{ always() && (steps.apply_worker.outcome == 'failure' || steps.restart_worker.outcome == 'failure' || steps.wait_worker.outcome == 'failure') }}
         run: |
           echo "::warning::Rollout of deployment-test-app-worker failed its health check — rolling back to the previous revision."
-          kubectl rollout undo deployment/deployment-test-app-worker -n storefront-dev
-          kubectl rollout status deployment/deployment-test-app-worker -n storefront-dev --timeout=120s
+          kubectl rollout undo deployment/deployment-test-app-worker -n storefront-dev-2
+          kubectl rollout status deployment/deployment-test-app-worker -n storefront-dev-2 --timeout=120s
